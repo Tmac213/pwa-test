@@ -22,11 +22,58 @@
       cursor: pointer;
       margin-top: 20px;
     }
+    input {
+      padding: 10px;
+      font-size: 1rem;
+      margin-right: 10px;
+    }
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+      background: #fff;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+    .remove-btn {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    .remove-btn:hover {
+      background: #c0392b;
+    }
   </style>
 </head>
 <body>
   <h1>Welcome to Offline PWA Test</h1>
   <p>This is a simple PWA that works offline.</p>
+
+  <div>
+    <input id="nameInput" type="text" placeholder="Enter a name" />
+    <button onclick="addName()">Add Name</button>
+  </div>
+
+  <table id="namesTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Rows inserted here -->
+    </tbody>
+  </table>
+
   <button id="installBtn" style="display:none;">Install App</button>
 
   <script>
@@ -55,7 +102,6 @@
       }
     });
 
-    // Service Worker registration
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('service-worker.js')
@@ -66,6 +112,72 @@
             console.log('ServiceWorker registration failed:', err);
           });
       });
+    }
+
+    // Load saved names on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadNames();
+    });
+
+    function loadNames() {
+      const savedNames = JSON.parse(localStorage.getItem('namesList')) || [];
+      const tbody = document.getElementById('namesTable').querySelector('tbody');
+      tbody.innerHTML = ''; // clear existing rows
+
+      savedNames.forEach(name => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${name}</td>
+          <td><button class="remove-btn" onclick="removeName(this)">Remove</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function saveNames() {
+      const tbody = document.getElementById('namesTable').querySelector('tbody');
+      const rows = tbody.querySelectorAll('tr');
+      const names = [];
+      rows.forEach(row => {
+        names.push(row.cells[0].textContent);
+      });
+      localStorage.setItem('namesList', JSON.stringify(names));
+    }
+
+    function addName() {
+      const input = document.getElementById('nameInput');
+      const name = input.value.trim();
+      if (!name) {
+        alert('Please enter a name');
+        return;
+      }
+
+      const tbody = document.getElementById('namesTable').querySelector('tbody');
+
+      // Prevent duplicate names (case insensitive)
+      const existingNames = Array.from(tbody.querySelectorAll('tr td:first-child')).map(td => td.textContent.toLowerCase());
+      if (existingNames.includes(name.toLowerCase())) {
+        alert('This name already exists.');
+        return;
+      }
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${name}</td>
+        <td><button class="remove-btn" onclick="removeName(this)">Remove</button></td>
+      `;
+
+      tbody.appendChild(tr);
+      input.value = '';
+      input.focus();
+
+      saveNames();
+    }
+
+    function removeName(button) {
+      const tr = button.closest('tr');
+      tr.remove();
+      saveNames();
     }
   </script>
 </body>
